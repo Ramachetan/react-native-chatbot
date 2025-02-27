@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "422076667857",
+    "project_id": "sample-firebase-ai-app-c8618",
+    "storage_bucket": "sample-firebase-ai-app-c8618.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:422076667857:android:cd64017522a0d926bd72f0",
+        "android_client_info": {
+          "package_name": "com.company.reactnative"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAk5FrtXaEnSFB44Vrn4qNBwlg4wDQM4ks"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
