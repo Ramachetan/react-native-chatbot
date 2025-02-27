@@ -3,9 +3,8 @@ import { theme } from './theme';
 import { wp, hp, sp } from '../utils/responsive';
 
 const STATUSBAR_HEIGHT = Platform.OS === 'ios' ? 20 : StatusBar.currentHeight || 0;
-// Increased minimum height to better accommodate text
-const MIN_HEADER_HEIGHT = hp(6); // 6% of screen height
-const MAX_HEADER_HEIGHT = hp(8); // 8% of screen height
+const MIN_HEADER_HEIGHT = hp(7);
+const MAX_HEADER_HEIGHT = hp(9);
 
 export const chatStyles = StyleSheet.create({
   container: {
@@ -14,55 +13,63 @@ export const chatStyles = StyleSheet.create({
     paddingTop: STATUSBAR_HEIGHT,
   },
   header: {
-    paddingVertical: theme.spacing.sm, // Changed to smaller vertical padding
+    paddingVertical: theme.spacing.sm,
     paddingHorizontal: theme.spacing.md,
-    backgroundColor: theme.colors.background,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
+    backgroundColor: theme.colors.primary,
     flexDirection: 'row',
-    alignItems: 'center', // Keep this
+    alignItems: 'center',
     justifyContent: 'space-between',
     minHeight: MIN_HEADER_HEIGHT,
     maxHeight: MAX_HEADER_HEIGHT,
     height: Platform.OS === 'ios' ? MIN_HEADER_HEIGHT : MIN_HEADER_HEIGHT + hp(0.5),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 4,
   },
   newChatButton: {
     padding: 8,
     borderRadius: 20,
-    backgroundColor: theme.colors.primary,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   headerTitle: {
-    fontSize: theme.fontSize.large,
-    fontWeight: '600',
-    color: theme.colors.text,
-    textAlignVertical: 'center', // Add this for Android
-    includeFontPadding: false, // Add this to remove extra padding
-    padding: theme.spacing.xs, // Add padding around text
+    fontSize: theme.fontSize.xlarge,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    textAlignVertical: 'center',
+    includeFontPadding: false,
+    padding: theme.spacing.xs,
   },
   messageList: {
     flex: 1,
     padding: theme.spacing.md,
+    backgroundColor: 'rgba(245, 247, 250, 1)',
   },
   messageBubble: {
-    maxWidth: wp(75), // 75% of screen width
+    maxWidth: wp(75),
     padding: theme.spacing.md,
-    borderRadius: sp(20),
+    borderRadius: sp(16),
     marginVertical: theme.spacing.xs,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
   },
   userMessage: {
     alignSelf: 'flex-end',
     backgroundColor: theme.colors.primary,
-    borderTopRightRadius: 4,
+    borderBottomRightRadius: sp(4),
+    marginLeft: wp(15),
   },
   botMessage: {
     alignSelf: 'flex-start',
-    backgroundColor: theme.colors.secondary,
-    borderTopLeftRadius: 4,
+    backgroundColor: '#FFFFFF',
+    borderBottomLeftRadius: sp(4),
+    marginRight: wp(15),
   },
   messageText: {
     fontSize: theme.fontSize.medium,
@@ -77,7 +84,7 @@ export const chatStyles = StyleSheet.create({
   timestamp: {
     fontSize: theme.fontSize.small,
     marginTop: theme.spacing.xs,
-    opacity: 0.6,
+    opacity: 0.75,
   },
   userTimestamp: {
     color: '#FFFFFF',
@@ -89,31 +96,39 @@ export const chatStyles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     padding: theme.spacing.md,
-    backgroundColor: theme.colors.background,
+    backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
+    borderTopColor: 'rgba(230, 230, 230, 1)',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
   },
   input: {
     flex: 1,
     marginRight: theme.spacing.sm,
     padding: theme.spacing.md,
-    backgroundColor: theme.colors.secondary,
+    backgroundColor: 'rgba(245, 247, 250, 1)',
     borderRadius: sp(24),
     fontSize: theme.fontSize.medium,
-    maxHeight: hp(12), // 12% of screen height
+    maxHeight: hp(12),
+    borderWidth: 1,
+    borderColor: 'rgba(230, 230, 230, 1)',
   },
   sendButton: {
-    width: sp(44),
-    height: sp(44),
-    borderRadius: sp(22),
+    width: sp(48),
+    height: sp(48),
+    borderRadius: sp(24),
     backgroundColor: theme.colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  sendButtonText: {
-    color: '#FFFFFF',
-    fontSize: theme.fontSize.xlarge,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 2,
   },
   loadingContainer: {
     padding: theme.spacing.sm,
@@ -121,5 +136,43 @@ export const chatStyles = StyleSheet.create({
   },
   disabledButton: {
     opacity: 0.5,
+  },
+  typingIndicator: {
+    flexDirection: 'row',
+    padding: theme.spacing.sm,
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+  },
+  typingDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    backgroundColor: theme.colors.lightText,
+    marginHorizontal: 2,
+  },
+  avatarContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    marginRight: theme.spacing.xs,
+    backgroundColor: theme.colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  userAvatar: {
+    backgroundColor: 'transparent',
+  },
+  avatarText: {
+    color: '#FFFFFF',
+    fontSize: theme.fontSize.small,
+    fontWeight: '600',
+  },
+  messageRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    marginVertical: theme.spacing.xs,
+  },
+  messageContent: {
+    maxWidth: wp(68),
   },
 });

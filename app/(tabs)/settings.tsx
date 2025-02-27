@@ -1,5 +1,5 @@
 import { View, Text, ScrollView, Pressable, Platform, TextInput } from 'react-native';
-import React from 'react';
+import React, { useState } from 'react';
 import { Stack } from 'expo-router';
 import { Picker } from '@react-native-picker/picker';
 import Slider from '@react-native-community/slider';
@@ -9,7 +9,6 @@ import { theme } from '../../styles/theme';
 import { hp } from '../../utils/responsive';
 import { settingsStyles } from '../../styles/settings.styles';
 
-
 const MIN_HEADER_HEIGHT = hp(6);
 
 export default function Settings() {
@@ -17,6 +16,8 @@ export default function Settings() {
     modelName, temperature, topK, topP, maxOutputTokens, responseMimeType, apiKey,
     setModelName, setTemperature, setTopK, setTopP, setMaxOutputTokens, setResponseMimeType, setApiKey
   } = useSettingsStore();
+
+  const [showApiKey, setShowApiKey] = useState(false);
 
   const models: ModelName[] = [
     'gemini-2.0-flash',
@@ -39,6 +40,39 @@ export default function Settings() {
     </View>
   );
 
+  const renderParameterTooltip = (title: string) => (
+    <MaterialIcons
+      name="help-outline"
+      size={16}
+      color={theme.colors.lightText}
+      style={settingsStyles.helpIcon}
+    />
+  );
+
+  const renderModelSelector = () => (
+    <View>
+      {models.map((model) => (
+        <Pressable 
+          key={model}
+          style={[
+            settingsStyles.modelCard,
+            modelName === model && settingsStyles.selectedModelCard
+          ]}
+          onPress={() => setModelName(model as ModelName)}
+        >
+          <Text style={settingsStyles.modelName}>{model}</Text>
+          {modelName === model && (
+            <MaterialIcons
+              name="check-circle"
+              size={20}
+              style={settingsStyles.modelCheckmark}
+            />
+          )}
+        </Pressable>
+      ))}
+    </View>
+  );
+
   return (
     <View style={settingsStyles.container}>
       <Stack.Screen options={{ 
@@ -46,95 +80,132 @@ export default function Settings() {
         headerStyle: {
           backgroundColor: theme.colors.background,
         },
+        headerShadowVisible: false,
         contentStyle: {
           paddingTop: MIN_HEADER_HEIGHT,
         }
       }} />
-      <ScrollView style={settingsStyles.scrollView}>
+      <ScrollView style={settingsStyles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={settingsStyles.section}>
           {renderSectionHeader('API Configuration', 'vpn-key')}
-          <Text style={settingsStyles.label}>API Key</Text>
-          <TextInput
-            style={settingsStyles.input}
-            value={apiKey}
-            onChangeText={setApiKey}
-            placeholder="Enter your Gemini API key"
-            placeholderTextColor={theme.colors.lightText}
-            secureTextEntry
-          />
+          <View style={settingsStyles.inputContainer}>
+            <Text style={settingsStyles.label}>API Key</Text>
+            <TextInput
+              style={settingsStyles.input}
+              value={apiKey}
+              onChangeText={setApiKey}
+              placeholder="Enter your Gemini API key"
+              placeholderTextColor={theme.colors.lightText}
+              secureTextEntry={!showApiKey}
+            />
+            <Pressable 
+              style={settingsStyles.inputIcon} 
+              onPress={() => setShowApiKey(!showApiKey)}
+            >
+              <MaterialIcons 
+                name={showApiKey ? "visibility-off" : "visibility"} 
+                size={20} 
+                color={theme.colors.lightText} 
+              />
+            </Pressable>
+          </View>
         </View>
 
         <View style={settingsStyles.section}>
-          {renderSectionHeader('Model Selection', 'star')}
-          <Picker
-            selectedValue={modelName}
-            onValueChange={(value) => setModelName(value as ModelName)}
-            style={settingsStyles.picker}
-          >
-            {models.map((model) => (
-              <Picker.Item key={model} label={model} value={model} />
-            ))}
-          </Picker>
+          {renderSectionHeader('Model Selection', 'smart-toy')}
+          {renderModelSelector()}
         </View>
 
         <View style={settingsStyles.section}>
           {renderSectionHeader('Generation Parameters', 'tune')}
-          <Text style={settingsStyles.label}>
-            Temperature <Text style={settingsStyles.value}>{temperature.toFixed(2)}</Text>
-          </Text>
-          <Slider
-            style={settingsStyles.slider}
-            value={temperature}
-            onValueChange={setTemperature}
-            minimumValue={0}
-            maximumValue={2}
-            step={0.1}
-            minimumTrackTintColor={theme.colors.primary}
-            maximumTrackTintColor={theme.colors.border}
-            thumbTintColor={theme.colors.primary}
-          />
+          
+          <View style={settingsStyles.sliderContainer}>
+            <View style={settingsStyles.parameterLabel}>
+              <Text style={settingsStyles.label}>
+                Temperature {renderParameterTooltip('temperature')}
+              </Text>
+              <Text style={settingsStyles.value}>{temperature.toFixed(2)}</Text>
+            </View>
+            <Slider
+              style={settingsStyles.slider}
+              value={temperature}
+              onValueChange={setTemperature}
+              minimumValue={0}
+              maximumValue={2}
+              step={0.1}
+              minimumTrackTintColor={theme.colors.primary}
+              maximumTrackTintColor="rgba(0,0,0,0.1)"
+              thumbTintColor={theme.colors.primary}
+            />
+            <View style={settingsStyles.parameterRow}>
+              <Text>Conservative</Text>
+              <Text>Creative</Text>
+            </View>
+          </View>
 
-          <Text style={[settingsStyles.label, { marginTop: hp(2) }]}>
-            Top K <Text style={settingsStyles.value}>{topK}</Text>
-          </Text>
-          <Slider
-            style={settingsStyles.slider}
-            value={topK}
-            onValueChange={setTopK}
-            minimumValue={1}
-            maximumValue={2}
-            step={0.1}
-            minimumTrackTintColor={theme.colors.primary}
-            maximumTrackTintColor={theme.colors.border}
-          />
+          <View style={[settingsStyles.sliderContainer, { marginTop: hp(2) }]}>
+            <View style={settingsStyles.parameterLabel}>
+              <Text style={settingsStyles.label}>
+                Top K {renderParameterTooltip('topK')}
+              </Text>
+              <Text style={settingsStyles.value}>{topK}</Text>
+            </View>
+            <Slider
+              style={settingsStyles.slider}
+              value={topK}
+              onValueChange={setTopK}
+              minimumValue={1}
+              maximumValue={2}
+              step={0.1}
+              minimumTrackTintColor={theme.colors.primary}
+              maximumTrackTintColor="rgba(0,0,0,0.1)"
+              thumbTintColor={theme.colors.primary}
+            />
+          </View>
 
-          <Text style={[settingsStyles.label, { marginTop: hp(2) }]}>
-            Top P <Text style={settingsStyles.value}>{topP.toFixed(2)}</Text>
-          </Text>
-          <Slider
-            style={settingsStyles.slider}
-            value={topP}
-            onValueChange={setTopP}
-            minimumValue={0}
-            maximumValue={1}
-            step={0.01}
-            minimumTrackTintColor={theme.colors.primary}
-            maximumTrackTintColor={theme.colors.border}
-          />
+          <View style={[settingsStyles.sliderContainer, { marginTop: hp(2) }]}>
+            <View style={settingsStyles.parameterLabel}>
+              <Text style={settingsStyles.label}>
+                Top P {renderParameterTooltip('topP')}
+              </Text>
+              <Text style={settingsStyles.value}>{topP.toFixed(2)}</Text>
+            </View>
+            <Slider
+              style={settingsStyles.slider}
+              value={topP}
+              onValueChange={setTopP}
+              minimumValue={0}
+              maximumValue={1}
+              step={0.01}
+              minimumTrackTintColor={theme.colors.primary}
+              maximumTrackTintColor="rgba(0,0,0,0.1)"
+              thumbTintColor={theme.colors.primary}
+            />
+          </View>
 
-          <Text style={[settingsStyles.label, { marginTop: hp(2) }]}>
-            Max Output Tokens <Text style={settingsStyles.value}>{maxOutputTokens}</Text>
-          </Text>
-          <Slider
-            style={settingsStyles.slider}
-            value={maxOutputTokens}
-            onValueChange={setMaxOutputTokens}
-            minimumValue={1}
-            maximumValue={8192}
-            step={1}
-            minimumTrackTintColor={theme.colors.primary}
-            maximumTrackTintColor={theme.colors.border}
-          />
+          <View style={[settingsStyles.sliderContainer, { marginTop: hp(2) }]}>
+            <View style={settingsStyles.parameterLabel}>
+              <Text style={settingsStyles.label}>
+                Max Output Tokens {renderParameterTooltip('maxTokens')}
+              </Text>
+              <Text style={settingsStyles.value}>{maxOutputTokens}</Text>
+            </View>
+            <Slider
+              style={settingsStyles.slider}
+              value={maxOutputTokens}
+              onValueChange={setMaxOutputTokens}
+              minimumValue={1}
+              maximumValue={8192}
+              step={1}
+              minimumTrackTintColor={theme.colors.primary}
+              maximumTrackTintColor="rgba(0,0,0,0.1)"
+              thumbTintColor={theme.colors.primary}
+            />
+            <View style={settingsStyles.parameterRow}>
+              <Text>Short</Text>
+              <Text>Long</Text>
+            </View>
+          </View>
         </View>
 
         <View style={settingsStyles.section}>
