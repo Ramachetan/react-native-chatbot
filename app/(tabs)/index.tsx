@@ -17,18 +17,33 @@ import { chatStyles } from '../../styles/chat.styles';
 import { generateResponse, MessagePart } from '../../services/gemini';
 import { ConfirmationModal } from '../../components/ConfirmationModal';
 import { checkApiKey } from '../../utils/apiKeyCheck';
+import 'react-native-get-random-values';
+import { v4 as uuidv4 } from 'uuid';
+import useChatFirestore from '../../hooks/useChatFirestore';
+import Markdown from '@ronradtke/react-native-markdown-display';
 
 export default function ChatScreen() {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const flatListRef = useRef<FlatList>(null);
   const typingDots = [useRef(new Animated.Value(0)).current, useRef(new Animated.Value(0)).current, useRef(new Animated.Value(0)).current];
 
+  const { 
+    chatId,
+    messages,
+    isLoading: isFirestoreLoading,
+    error: firestoreError,
+    createNewChat,
+    updateMessages,
+    addMessage
+  } = useChatFirestore();
+
+  const [isGeneratingResponse, setIsGeneratingResponse] = useState(false);
+  const isLoading = isGeneratingResponse || isFirestoreLoading;
+
   // Animation for typing indicator
   useEffect(() => {
-    if (isLoading) {
+    if (isGeneratingResponse) {
       const animations = typingDots.map((dot, index) => {
         return Animated.sequence([
           Animated.delay(index * 150),
@@ -56,14 +71,14 @@ export default function ChatScreen() {
         typingDots.forEach(dot => dot.setValue(0));
       };
     }
-  }, [isLoading]);
+  }, [isGeneratingResponse]);
 
   const clearChat = () => {
     setShowConfirmation(true);
   };
 
-  const handleConfirmClear = () => {
-    setMessages([]);
+  const handleConfirmClear = async () => {
+    await createNewChat([]);
     setInputText('');
     setShowConfirmation(false);
   };
@@ -76,6 +91,8 @@ export default function ChatScreen() {
 
   useEffect(() => {
     scrollToBottom();
+    // Debug log to check if messages are coming through
+    console.log(`Messages updated: ${messages.length} messages available`);
   }, [messages]);
 
   const handleSend = async () => {
@@ -84,58 +101,65 @@ export default function ChatScreen() {
     if (!checkApiKey()) return;
 
     const userMessage: ChatMessage = {
-      id: Date.now().toString(),
+      id: uuidv4(),
       text: inputText,
       isUser: true,
       timestamp: new Date(),
     };
 
     Keyboard.dismiss();
-    setMessages(prevMessages => [...prevMessages, userMessage]);
+    const currentText = inputText;
     setInputText('');
-    setIsLoading(true);
+    
+    // Add the user message to the chat
+    await addMessage(userMessage);
+    setIsGeneratingResponse(true);
 
     try {
-      // Convert chat messages to API format
-      const apiMessages: MessagePart[] = messages.map(msg => ({
-        role: msg.isUser ? 'user' : 'model',
-        parts: [{ text: msg.text }],
-      }));
-
-      // Add current message
-      apiMessages.push({
-        role: 'user',
-        parts: [{ text: inputText }],
-      });
+      // Convert chat messages to API format - include the current messages plus the new message
+      const apiMessages: MessagePart[] = [
+        ...messages.map(msg => ({
+          role: msg.isUser ? 'user' : 'model' as 'user' | 'model',
+          parts: [{ text: msg.text }],
+        })),
+        {
+          role: 'user',
+          parts: [{ text: currentText }],
+        }
+      ];
 
       const response = await generateResponse(apiMessages);
 
       const botMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
+        id: uuidv4(),
         text: response,
         isUser: false,
         timestamp: new Date(),
       };
 
-      setMessages(prevMessages => [...prevMessages, botMessage]);
+      // Add bot response
+      await addMessage(botMessage);
     } catch (error) {
       // Handle error - add error message to chat
       const errorMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
+        id: uuidv4(),
         text: 'Sorry, I encountered an error. Please try again.',
         isUser: false,
         timestamp: new Date(),
       };
-      setMessages(prevMessages => [...prevMessages, errorMessage]);
+      await addMessage(errorMessage);
     } finally {
-      setIsLoading(false);
+      setIsGeneratingResponse(false);
     }
   };
 
   const formatTime = (date: Date) => {
+    if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
+      // Return a fallback time string if date is invalid
+      return 'Unknown time';
+    }
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
-
   const getInitials = (isUser: boolean) => {
     return isUser ? 'You' : 'AI';
   };
@@ -150,29 +174,76 @@ export default function ChatScreen() {
     </View>
   );
 
-  const renderMessage = ({ item }: { item: ChatMessage }) => (
-    <View style={[chatStyles.messageRow, item.isUser ? { justifyContent: 'flex-end' } : { justifyContent: 'flex-start' }]}>
-      {!item.isUser && renderAvatar(item.isUser)}
-      <View style={[chatStyles.messageBubble, item.isUser ? chatStyles.userMessage : chatStyles.botMessage]}>
-        <Text style={[
-          chatStyles.messageText,
-          item.isUser ? chatStyles.userMessageText : chatStyles.botMessageText
-        ]}>
-          {item.text}
-        </Text>
-        <Text style={[
-          chatStyles.timestamp,
-          item.isUser ? chatStyles.userTimestamp : chatStyles.botTimestamp
-        ]}>
-          {formatTime(item.timestamp)}
-        </Text>
-      </View>
-      {item.isUser && renderAvatar(item.isUser)}
+  const renderEmptyComponent = () => (
+    <View style={chatStyles.emptyContainer}>
+      <Text style={chatStyles.emptyText}>No messages yet. Start a conversation!</Text>
     </View>
   );
 
+  const renderMessage = ({ item }: { item: ChatMessage }) => {
+    console.log('Rendering message:', item.id, item.text.substring(0, 20) + '...');
+    // Convert Firestore timestamp to JavaScript Date if needed
+    let timestamp: Date;
+    
+    if (item.timestamp instanceof Date) {
+      timestamp = item.timestamp;
+    } else if (item.timestamp && typeof item.timestamp === 'object' && 'toDate' in item.timestamp) {
+      // Handle Firestore Timestamp objects
+      timestamp = item.timestamp.toDate();
+    } else {
+      // Fallback
+      timestamp = new Date();
+    }
+  
+    return (
+      <View style={[chatStyles.messageRow, item.isUser ? { justifyContent: 'flex-end' } : { justifyContent: 'flex-start' }]}>
+        {!item.isUser && renderAvatar(item.isUser)}
+        <View style={[chatStyles.messageBubble, item.isUser ? chatStyles.userMessage : chatStyles.botMessage]}>
+          {item.isUser ? (
+            <Text style={[chatStyles.messageText, chatStyles.userMessageText]}>
+              {item.text}
+            </Text>
+          ) : (
+            <Markdown 
+              style={{
+                body: {
+                  ...chatStyles.messageText,
+                  ...chatStyles.botMessageText,
+                },
+                // You can add more markdown styles as needed
+                code_block: {
+                  backgroundColor: 'rgba(0, 0, 0, 0.05)',
+                  padding: 8,
+                  borderRadius: 4,
+                },
+                code_inline: {
+                  backgroundColor: 'rgba(0, 0, 0, 0.05)',
+                  padding: 2,
+                  borderRadius: 2,
+                },
+                link: {
+                  color: theme.colors.primary,
+                  textDecorationLine: 'underline',
+                }
+              }}
+            >
+              {item.text}
+            </Markdown>
+          )}
+          <Text style={[
+            chatStyles.timestamp,
+            item.isUser ? chatStyles.userTimestamp : chatStyles.botTimestamp
+          ]}>
+            {formatTime(timestamp)}
+          </Text>
+        </View>
+        {item.isUser && renderAvatar(item.isUser)}
+      </View>
+    );
+  };
+
   const renderTypingIndicator = () => {
-    if (!isLoading) return null;
+    if (!isGeneratingResponse) return null;
     
     return (
       <View style={chatStyles.messageRow}>
@@ -221,16 +292,23 @@ export default function ChatScreen() {
         </TouchableOpacity>
       </View>
       
+      {firestoreError && (
+        <Text style={[chatStyles.errorText, { textAlign: 'center', margin: 10 }]}>
+          {firestoreError}
+        </Text>
+      )}
+      
       <FlatList
         ref={flatListRef}
         data={messages}
         renderItem={renderMessage}
         keyExtractor={item => item.id}
         style={chatStyles.messageList}
-        contentContainerStyle={{ paddingVertical: 10 }}
-        inverted={false}
+        contentContainerStyle={{ paddingVertical: 10, flexGrow: 1 }}
         showsVerticalScrollIndicator={false}
+        ListEmptyComponent={renderEmptyComponent}
         ListFooterComponent={renderTypingIndicator}
+        extraData={messages.length} // Add this to ensure re-rendering when messages change
       />
       
       <View style={chatStyles.inputContainer}>

@@ -175,4 +175,22 @@ export const chatStyles = StyleSheet.create({
   messageContent: {
     maxWidth: wp(68),
   },
+  errorText: {
+    color: 'red',
+    fontSize: 14,
+    margin: 10,
+    textAlign: 'center',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 40,
+  },
+  emptyText: {
+    color: theme.colors.lightText,
+    fontSize: 16,
+    textAlign: 'center',
+  },
 });
