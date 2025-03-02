@@ -1,4 +1,4 @@
-import { db } from '../firebase/firebaseConfig';
+import { firestore } from '../firebase/firebaseConfig';
 import { 
   collection, 
   doc, 
@@ -39,7 +39,7 @@ class ChatRepository {
   static async createChat(chatId: string, messageHistory: ChatMessage[] = []): Promise<DocumentReference> {
     try {
       // Creates a reference to document at path /chats/{chatId}
-      const chatRef = doc(db, CHATS_COLLECTION, chatId);
+      const chatRef = doc(firestore, CHATS_COLLECTION, chatId);
       await setDoc(chatRef, {
         chatId: chatId, // Redundantly stores the ID inside the document for easier queries
         messageHistory: JSON.stringify(messageHistory),
@@ -63,7 +63,7 @@ class ChatRepository {
    */
   static async updateChatHistory(chatId: string, messageHistory: ChatMessage[]): Promise<void> {
     try {
-      const chatRef = doc(db, CHATS_COLLECTION, chatId);
+      const chatRef = doc(firestore, CHATS_COLLECTION, chatId);
       
       // Check if document exists first
       const chatSnap = await getDoc(chatRef);
@@ -100,7 +100,7 @@ class ChatRepository {
   static async getChat(chatId: string): Promise<ParsedChatData | null> {
     try {
       // References document at path /chats/{chatId}
-      const chatRef = doc(db, CHATS_COLLECTION, chatId);
+      const chatRef = doc(firestore, CHATS_COLLECTION, chatId);
       const chatSnap = await getDoc(chatRef);
       
       if (chatSnap.exists()) {
@@ -125,7 +125,7 @@ class ChatRepository {
   static async getAllChats(): Promise<ParsedChatData[]> {
     try {
       const chatsQuery = query(
-        collection(db, CHATS_COLLECTION),
+        collection(firestore, CHATS_COLLECTION),
         orderBy('updatedAt', 'desc')
       );
       
