@@ -5,7 +5,6 @@ import {
   FlatList, 
   Text, 
   Pressable, 
-  ActivityIndicator,
   Animated,
   Keyboard,
   TouchableOpacity
@@ -41,7 +40,7 @@ export default function ChatScreen() {
   const [isGeneratingResponse, setIsGeneratingResponse] = useState(false);
   const isLoading = isGeneratingResponse || isFirestoreLoading;
 
-  // Animation for typing indicator
+  
   useEffect(() => {
     if (isGeneratingResponse) {
       const animations = typingDots.map((dot, index) => {
@@ -91,8 +90,6 @@ export default function ChatScreen() {
 
   useEffect(() => {
     scrollToBottom();
-    // Debug log to check if messages are coming through
-    console.log(`Messages updated: ${messages.length} messages available`);
   }, [messages]);
 
   const handleSend = async () => {
@@ -110,13 +107,10 @@ export default function ChatScreen() {
     Keyboard.dismiss();
     const currentText = inputText;
     setInputText('');
-    
-    // Add the user message to the chat
     await addMessage(userMessage);
     setIsGeneratingResponse(true);
 
     try {
-      // Convert chat messages to API format - include the current messages plus the new message
       const apiMessages: MessagePart[] = [
         ...messages.map(msg => ({
           role: msg.isUser ? 'user' : 'model' as 'user' | 'model',
@@ -136,11 +130,8 @@ export default function ChatScreen() {
         isUser: false,
         timestamp: new Date(),
       };
-
-      // Add bot response
       await addMessage(botMessage);
     } catch (error) {
-      // Handle error - add error message to chat
       const errorMessage: ChatMessage = {
         id: uuidv4(),
         text: 'Sorry, I encountered an error. Please try again.',
@@ -155,7 +146,6 @@ export default function ChatScreen() {
 
   const formatTime = (date: Date) => {
     if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
-      // Return a fallback time string if date is invalid
       return 'Unknown time';
     }
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -182,16 +172,16 @@ export default function ChatScreen() {
 
   const renderMessage = ({ item }: { item: ChatMessage }) => {
     console.log('Rendering message:', item.id, item.text.substring(0, 20) + '...');
-    // Convert Firestore timestamp to JavaScript Date if needed
+    
     let timestamp: Date;
     
     if (item.timestamp instanceof Date) {
       timestamp = item.timestamp;
     } else if (item.timestamp && typeof item.timestamp === 'object' && 'toDate' in item.timestamp) {
-      // Handle Firestore Timestamp objects
+      
       timestamp = item.timestamp.toDate();
     } else {
-      // Fallback
+      
       timestamp = new Date();
     }
   
@@ -210,7 +200,7 @@ export default function ChatScreen() {
                   ...chatStyles.messageText,
                   ...chatStyles.botMessageText,
                 },
-                // You can add more markdown styles as needed
+                
                 code_block: {
                   backgroundColor: 'rgba(0, 0, 0, 0.05)',
                   padding: 8,
@@ -308,7 +298,7 @@ export default function ChatScreen() {
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={renderEmptyComponent}
         ListFooterComponent={renderTypingIndicator}
-        extraData={messages.length} // Add this to ensure re-rendering when messages change
+        extraData={messages.length} 
       />
       
       <View style={chatStyles.inputContainer}>

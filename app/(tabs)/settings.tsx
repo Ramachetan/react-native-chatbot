@@ -1,7 +1,6 @@
 import { View, Text, ScrollView, Pressable, Platform, TextInput } from 'react-native';
 import React, { useState } from 'react';
 import { Stack } from 'expo-router';
-import { Picker } from '@react-native-picker/picker';
 import Slider from '@react-native-community/slider';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSettingsStore, ModelName } from '../../stores/settingsStore';
